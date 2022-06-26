@@ -1,0 +1,24 @@
+procedure:
+  name: "src"
+
+  build:
+    files:
+      - "aurora.c"
+      - "op.c"
+    headers: "."
+    compiler: "clang"
+
+  link:
+    files:
+      - "aurora.o"
+      - "op.o"
+    linker: "linker"
+    target: "library"
+    into: "libaurora.so"
+
+  library:
+    name: "Aurora"
+    from: "libaurora.so"
+
+  export:
+    - "Aurora"

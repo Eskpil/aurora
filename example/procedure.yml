@@ -1,0 +1,17 @@
+procedure:
+  name: "Example"
+  build:
+    files:
+      - "main.c"
+    compiler: "clang"
+  
+  link:
+    files:
+      - "main.o"
+    target: "binary"
+    linker: "linker"
+    into: "main"
+
+    with:
+      - name: "Aurora"
+        kind: "exported"

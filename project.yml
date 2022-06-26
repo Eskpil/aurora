@@ -1,0 +1,5 @@
+project:
+  name: "Aurora"
+  procedures:
+    - "src/"
+    - "example/"
