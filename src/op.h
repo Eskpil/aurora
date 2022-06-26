@@ -8,11 +8,13 @@ typedef enum {
     OP_ADD,
 } OpKind;
 
+const char *op_kind_as_string(OpKind kind);
+
 typedef union {
-    uint64_t as_uint;
+    uint32_t as_uint;
 } Value;
 
-Value uint_value(uint64_t value);
+Value uint_value(uint32_t value);
 
 Value empty_value();
 

@@ -1,5 +1,6 @@
 project:
   name: "Aurora"
+  compilers: "compilers.yml"
   procedures:
     - "src/"
     - "example/"
