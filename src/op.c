@@ -5,6 +5,8 @@ const char *op_kind_as_string(OpKind kind)
     switch (kind) {
         case OP_PUSH: return "OP_PUSH";
         case OP_ADD: return "OP_ADD";
+        case OP_SUB: return "OP_SUB";
+        case OP_POP: return "OP_POP";
         default: return "unreachable";
     };
 }

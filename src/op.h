@@ -4,8 +4,10 @@
 #include <stdint.h>
 
 typedef enum {
-    OP_PUSH,
+    OP_PUSH = 0,
     OP_ADD,
+    OP_SUB,
+    OP_POP,
 } OpKind;
 
 const char *op_kind_as_string(OpKind kind);

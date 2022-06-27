@@ -46,8 +46,11 @@ void *instance_generate(
     while (instance->program_size > instance->ip) {
         Inst inst = instance->program[instance->ip];
 
+        printf("Generating: %s\n", op_kind_as_string(inst.kind));
+
         switch (inst.kind) {
             case OP_PUSH: {
+                printf("\tValue: %d\n", inst.value.as_uint);
                 // mov
                 raw[idx++] = 0xB8;
                 // operand
@@ -70,6 +73,28 @@ void *instance_generate(
                 raw[idx++] = 0x48;
                 raw[idx++] = 0x01;
                 raw[idx++] = 0xC8;
+
+                // push rax
+                raw[idx++] = 0x50; 
+            } break;
+            case OP_SUB: {
+                // pop rcx
+                raw[idx++] = 0x59;
+                
+                // pop rax 
+                raw[idx++] = 0x58;      
+
+                // sub rax, rcx
+                raw[idx++] = 0x48;
+                raw[idx++] = 0x29;
+                raw[idx++] = 0xC8;
+
+                // push rax
+                raw[idx++] = 0x50;
+            } break;
+            case OP_POP: {
+                // pop rax
+                raw[idx++] = 0x58;
             } break;
         }
 
@@ -79,10 +104,17 @@ void *instance_generate(
     raw[idx++] = 0xC3;
 
     memcpy(memory, &raw, idx);
-    printf("Dissasembly:\t");
+    printf("\nDissasembly:\n\n");
 
     for (size_t i = 0; idx > i; ++i) {
-        printf("0x%x\t", memory[i]);
+        printf("\t%-3x: ", i);
+        if (memory[i] == 0xB8) {
+            printf("0x%x 0x%x 0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++], memory[i++], memory[i++]);
+        } else if (memory[i] == 0x48) {
+            printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++]); 
+        } else {
+            printf("0x%x\n", memory[i]);
+        }
     }
 
     printf("\n");
