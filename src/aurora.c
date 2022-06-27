@@ -109,9 +109,9 @@ void *instance_generate(
     for (size_t i = 0; idx > i; ++i) {
         printf("\t%-3x: ", i);
         if (memory[i] == 0xB8) {
-            printf("0x%x 0x%x 0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++], memory[i++], memory[i++]);
+            printf("0x%x 0x%x 0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++], memory[i++], memory[i]);
         } else if (memory[i] == 0x48) {
-            printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++]); 
+            printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i]); 
         } else {
             printf("0x%x\n", memory[i]);
         }
