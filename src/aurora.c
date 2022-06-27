@@ -66,7 +66,7 @@ void *instance_generate(
                 // pop rcx
                 raw[idx++] = 0x59; 
 
-                // add rdx, rcx
+                // add rax, rcx
                 raw[idx++] = 0x48;
                 raw[idx++] = 0x01;
                 raw[idx++] = 0xC8;
