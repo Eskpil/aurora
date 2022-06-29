@@ -13,10 +13,22 @@ AuroraInstance *aurora_new_instance()
 {
     AuroraInstance *instance = malloc(sizeof(AuroraInstance));
 
+    instance->program_size = 0;
+
+    instance->code[instance->program_size++] = 0x41;
+    instance->code[instance->program_size++] = 0x5a;
+
+    instance->memory = mmap(NULL, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (instance->memory == MAP_FAILED) {
+        fprintf(stderr, "Failed to allocate executable memory: %s\n", strerror(errno));
+        exit(1);
+    }
+
     return instance;
 }
 
-void instance_push_inst(
+uint32_t instance_push_inst(
     AuroraInstance *instance, 
     OpKind kind, 
     Value value
@@ -26,7 +38,140 @@ void instance_push_inst(
     inst.kind = kind;
     inst.value = value;
 
-    instance->program[instance->program_size++] = inst;
+    uint32_t start = instance->program_size;
+    
+    printf("Generating: %s\n", op_kind_as_string(inst.kind));
+
+    switch (inst.kind) {
+        case OP_PUSH: {
+            printf("\tValue: %d\n", inst.value.as_uint);
+            // mov
+            instance->code[instance->program_size++] = 0xB8;
+            // operand
+            instance->code[instance->program_size++] = (inst.value.as_uint >> 0) & 0xFF;
+            instance->code[instance->program_size++] = (inst.value.as_uint >> 8) & 0xFF;
+            instance->code[instance->program_size++] = (inst.value.as_uint >> 16) & 0xFF;
+            instance->code[instance->program_size++] = (inst.value.as_uint >> 24) & 0xFF;
+
+            // push rax
+            instance->code[instance->program_size++] = 0x50;
+        } break;
+        case OP_DUP: {
+            // pop rax
+            instance->code[instance->program_size++] = 0x58;
+
+            // push rax (x2)
+            instance->code[instance->program_size++] = 0x50;
+            instance->code[instance->program_size++] = 0x50;
+        } break;
+        case OP_ADD: {
+            // pop rax
+            instance->code[instance->program_size++] = 0x58;
+
+            // pop rcx
+            instance->code[instance->program_size++] = 0x59; 
+
+            // add rax, rcx
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0x01;
+            instance->code[instance->program_size++] = 0xC8;
+
+            // push rax
+            instance->code[instance->program_size++] = 0x50; 
+        } break;
+        case OP_SUB: {
+            // pop rcx
+            instance->code[instance->program_size++] = 0x59;
+            
+            // pop rax 
+            instance->code[instance->program_size++] = 0x58;      
+
+            // sub rax, rcx
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0x29;
+            instance->code[instance->program_size++] = 0xC8;
+
+            // push rax
+            instance->code[instance->program_size++] = 0x50;
+        } break;
+        case OP_MUL: {
+            // pop rcx
+            instance->code[instance->program_size++] = 0x59;
+
+            // pop rax
+            instance->code[instance->program_size++] = 0x58;      
+
+            // mul rax, rcx
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0xF7;
+            instance->code[instance->program_size++] = 0xC8;
+
+            // push rax
+            instance->code[instance->program_size++] = 0x50;
+        } break;
+                    
+        case OP_EQ: {
+            // pop rax (lhs of op)     
+            instance->code[instance->program_size++] = 0x58;
+
+            // pop rcx (rhs of op)
+            instance->code[instance->program_size++] = 0x59;
+
+            // cmp rax, rcx
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0x39;
+            instance->code[instance->program_size++] = 0xC8;
+
+            // sete al
+            instance->code[instance->program_size++] = 0x0F;
+            instance->code[instance->program_size++] = 0x94;
+            instance->code[instance->program_size++] = 0xC0; 
+
+            // moxzx rax, al
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0x0F;
+            instance->code[instance->program_size++] = 0xB6;
+            instance->code[instance->program_size++] = 0xC0;
+
+            // push rax
+            instance->code[instance->program_size++] = 0x50;
+        } break;
+        
+        case OP_JMP: {
+            printf("\tAddr: %d\n", inst.value.as_uint);      
+        } break;
+        case OP_BRK: {
+
+        } break;
+        case OP_JMP_UNLESS: {
+            printf("\tAddr: 0x%x (%d)\n", inst.value.as_uint, inst.value.as_uint);
+            // pop rax
+            instance->code[instance->program_size++] = 0x58;
+
+            // test rax, rax
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0x85;
+            instance->code[instance->program_size++] = 0xC0;
+
+            uint32_t target = (((uint64_t )instance->memory) - (inst.value.as_uint >> 0) & 0xFF) - 32;
+            // uint32_t target = (((uint64_t) instance->memory) - (instance->program_size)) + inst.value.as_uint;
+
+            printf("\tTarget: 0x%x (%d)\n", target, target);
+
+            // je {addr}
+            instance->code[instance->program_size++] = 0x74;
+            instance->code[instance->program_size++] = (target >> 0) & 0xFF;
+            // instance->code[instance->program_size++] = (inst.value.as_uint >> 0) & 0xFF;
+        } break;
+
+        case OP_POP: {
+            // pop rax
+            instance->code[instance->program_size++] = 0x58;
+        } break;
+    }
+
+
+    return start;
 }
 
 void *instance_generate(
@@ -39,79 +184,33 @@ void *instance_generate(
         exit(1);
     }
 
-    size_t idx = 0;
+    // push r10 (ret addr we saved earlier)
+    instance->code[instance->program_size++] = 0x41;
+    instance->code[instance->program_size++] = 0x52;
+    
+    //ret
+    instance->code[instance->program_size++] = 0xC3;
 
-    uint8_t raw[65535];
-
-    while (instance->program_size > instance->ip) {
-        Inst inst = instance->program[instance->ip];
-
-        printf("Generating: %s\n", op_kind_as_string(inst.kind));
-
-        switch (inst.kind) {
-            case OP_PUSH: {
-                printf("\tValue: %d\n", inst.value.as_uint);
-                // mov
-                raw[idx++] = 0xB8;
-                // operand
-                raw[idx++] = (inst.value.as_uint >> 0) & 0xFF;
-                raw[idx++] = (inst.value.as_uint >> 8) & 0xFF;
-                raw[idx++] = (inst.value.as_uint >> 16) & 0xFF;
-                raw[idx++] = (inst.value.as_uint >> 24) & 0xFF;
-
-                // push rax
-                raw[idx++] = 0x50;
-            } break;
-            case OP_ADD: {
-                // pop rax
-                raw[idx++] = 0x58;
-
-                // pop rcx
-                raw[idx++] = 0x59; 
-
-                // add rax, rcx
-                raw[idx++] = 0x48;
-                raw[idx++] = 0x01;
-                raw[idx++] = 0xC8;
-
-                // push rax
-                raw[idx++] = 0x50; 
-            } break;
-            case OP_SUB: {
-                // pop rcx
-                raw[idx++] = 0x59;
-                
-                // pop rax 
-                raw[idx++] = 0x58;      
-
-                // sub rax, rcx
-                raw[idx++] = 0x48;
-                raw[idx++] = 0x29;
-                raw[idx++] = 0xC8;
-
-                // push rax
-                raw[idx++] = 0x50;
-            } break;
-            case OP_POP: {
-                // pop rax
-                raw[idx++] = 0x58;
-            } break;
-        }
-
-        instance->ip++; 
-    }
-
-    raw[idx++] = 0xC3;
-
-    memcpy(memory, &raw, idx);
+    memcpy(memory, &instance->code, instance->program_size);
     printf("\nDissasembly:\n\n");
 
-    for (size_t i = 0; idx > i; ++i) {
+    for (size_t i = 0; instance->program_size > i; ++i) {
         printf("\t%-3x: ", i);
         if (memory[i] == 0xB8) {
             printf("0x%x 0x%x 0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++], memory[i++], memory[i]);
         } else if (memory[i] == 0x48) {
-            printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i]); 
+            printf("0x%x ", memory[i++]);
+            if (memory[i] == 0x0F) {
+                printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i]);   
+            } else {
+                printf("0x%x 0x%x\n", memory[i++], memory[i]); 
+            }
+        } else if (memory[i] == 0x0F) {
+            printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i]);
+        } else if (memory[i] == 0x74) {
+            printf("0x%x 0x%x\n", memory[i++], memory[i]);
+        } else if (memory[i] == 0x41) {
+            printf("0x%x 0x%x\n", memory[i++], memory[i]);
         } else {
             printf("0x%x\n", memory[i]);
         }

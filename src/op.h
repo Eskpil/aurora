@@ -5,7 +5,17 @@
 
 typedef enum {
     OP_PUSH = 0,
+    OP_DUP,
+
     OP_ADD,
+    OP_MUL,
+    
+    OP_JMP,
+    OP_BRK,
+    OP_JMP_UNLESS,
+
+    OP_EQ,
+
     OP_SUB,
     OP_POP,
 } OpKind;

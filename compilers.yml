@@ -5,6 +5,8 @@ compilers:
     flags:
       - "-ggdb"
       - "-O0"
+      - "-fPIC"
+      - "-fsanitize=address,undefined"
 
   - name: "rust"
     path: "/usr/bin/rustc"

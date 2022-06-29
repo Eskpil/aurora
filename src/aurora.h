@@ -11,14 +11,15 @@ typedef struct {
 } Inst;
 
 typedef struct {
-    Inst program[65535];
-    size_t ip;
     size_t program_size;
+    uint8_t code[65535];
+
+    void *memory;
 } AuroraInstance;
 
 AuroraInstance *aurora_new_instance();
 
-void instance_push_inst(AuroraInstance *instance, OpKind kind, Value value);
+uint32_t instance_push_inst(AuroraInstance *instance, OpKind kind, Value value);
 
 void *instance_generate(AuroraInstance *instance);
 
