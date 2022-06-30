@@ -14,6 +14,8 @@ const char *op_kind_as_string(OpKind kind)
         case OP_BRK: return "OP_BRK";
         case OP_JMP_UNLESS: return "OP_JMP_UNLESS";
 
+        case OP_CALL: return "OP_CALL";
+
         case OP_EQ: return "OP_EQ";
 
         case OP_POP: return "OP_POP";
@@ -26,6 +28,13 @@ Value uint_value(uint32_t data)
     Value value = {0};
     value.as_uint = data;
     return value; 
+}
+
+Value ptr_value(void *data)
+{
+    Value value = {0};
+    value.as_ptr = data;
+    return value;
 }
 
 Value empty_value() 

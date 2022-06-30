@@ -1,5 +1,7 @@
 #include <aurora.h>
 
+#include <stdio.h>
+
 typedef uint32_t (*Result)(void);
 
 void make_simple(AuroraInstance *instance) 
@@ -24,17 +26,25 @@ void make_loop(AuroraInstance *instance)
     instance_push_inst(instance, OP_POP, empty_value());
 }
 
+extern uint32_t hello()
+{
+    printf("Epic\n");
+    return 100;
+}
+
+void make_call(AuroraInstance *instance)
+{
+    instance_push_inst(instance, OP_CALL, ptr_value(&hello));
+    instance_push_inst(instance, OP_POP, empty_value());
+}
+
 int main(void)
 {
     AuroraInstance *instance = aurora_new_instance(); 
 
-    Result result;
+    make_call(instance);
 
-    make_simple(instance);
-
-    result = instance_generate(instance);
-
-    printf("Address: %p\n", (const void *)result);
+    Result result = instance_generate(instance);
 
     uint32_t value = result();
 

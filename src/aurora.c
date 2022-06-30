@@ -164,6 +164,30 @@ uint32_t instance_push_inst(
             // instance->code[instance->program_size++] = (inst.value.as_uint >> 0) & 0xFF;
         } break;
 
+        case OP_CALL: {
+            uint64_t addr = (uint64_t) inst.value.as_ptr;                      
+
+            // mov rax, {addr}
+            instance->code[instance->program_size++] = 0x48;
+            instance->code[instance->program_size++] = 0xB8;
+
+            instance->code[instance->program_size++] = (addr >> 0) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 8) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 16) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 24) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 32) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 40) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 48) & 0xFF;
+            instance->code[instance->program_size++] = (addr >> 54) & 0xFF;
+
+            // call rax
+            instance->code[instance->program_size++] = 0xFF;
+            instance->code[instance->program_size++] = 0xD0;
+
+            // push rax
+            instance->code[instance->program_size++] = 0x50; 
+        } break;
+
         case OP_POP: {
             // pop rax
             instance->code[instance->program_size++] = 0x58;
@@ -184,6 +208,8 @@ void *instance_generate(
         exit(1);
     }
 
+    printf("Address: 0x%p\n", memory);
+
     // push r10 (ret addr we saved earlier)
     instance->code[instance->program_size++] = 0x41;
     instance->code[instance->program_size++] = 0x52;
@@ -202,9 +228,15 @@ void *instance_generate(
             printf("0x%x ", memory[i++]);
             if (memory[i] == 0x0F) {
                 printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i]);   
+            } else if (memory[i] == 0xBF) {
+                printf("0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i]);
+            } else if (memory[i] == 0xB8) {
+                printf("0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i++], memory[i]);
             } else {
                 printf("0x%x 0x%x\n", memory[i++], memory[i]); 
             }
+        } else if (memory[i] == 0xFF) {
+            printf("0x%x 0x%x\n", memory[i++], memory[i]);    
         } else if (memory[i] == 0x0F) {
             printf("0x%x 0x%x 0x%x\n", memory[i++], memory[i++], memory[i]);
         } else if (memory[i] == 0x74) {
