@@ -2,19 +2,18 @@
 
 typedef uint32_t (*Result)(void);
 
-int main(void)
+void make_simple(AuroraInstance *instance) 
 {
-    AuroraInstance *instance = aurora_new_instance(); 
+    instance_push_inst(instance, OP_PUSH, uint_value(69));
+    instance_push_inst(instance, OP_PUSH, uint_value(420));
+    instance_push_inst(instance, OP_ADD, empty_value());
+    instance_push_inst(instance, OP_PUSH, uint_value(100));
+    instance_push_inst(instance, OP_SUB, empty_value());
+    instance_push_inst(instance, OP_POP, empty_value());
+}
 
-    Result result;
-
-    // instance_push_inst(instance, OP_PUSH, uint_value(69));
-    // instance_push_inst(instance, OP_PUSH, uint_value(420));
-    // instance_push_inst(instance, OP_ADD, empty_value());
-    // instance_push_inst(instance, OP_PUSH, uint_value(100));
-    // instance_push_inst(instance, OP_SUB, empty_value());
-    // instance_push_inst(instance, OP_POP, empty_value());
-
+void make_loop(AuroraInstance *instance)
+{
     instance_push_inst(instance, OP_PUSH, uint_value(1));
     uint32_t addr = instance_push_inst(instance, OP_PUSH, uint_value(2));
     instance_push_inst(instance, OP_ADD, empty_value());
@@ -23,6 +22,15 @@ int main(void)
     instance_push_inst(instance, OP_EQ, empty_value());
     instance_push_inst(instance, OP_JMP_UNLESS, uint_value(addr));
     instance_push_inst(instance, OP_POP, empty_value());
+}
+
+int main(void)
+{
+    AuroraInstance *instance = aurora_new_instance(); 
+
+    Result result;
+
+    make_simple(instance);
 
     result = instance_generate(instance);
 
